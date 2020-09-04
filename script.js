@@ -5,7 +5,7 @@ let songs = [
         artist: 'Wawa',
         style: 'Salegy',
         length: '4:00',
-        pictures: 'https://alchetron.com/cdn/wawa-malagasy-musician-02c48728-1e61-4ff1-b775-0b26fc275b5-resize-750.jpeg',
+        picture: 'https://alchetron.com/cdn/wawa-malagasy-musician-02c48728-1e61-4ff1-b775-0b26fc275b5-resize-750.jpeg',
     },
     {
         id: 1599138512684,
@@ -13,7 +13,7 @@ let songs = [
         artist: 'Jaojaoby',
         style: 'Salegy',
         length: '2:25',
-        pictures: 'https://3.bp.blogspot.com/-kJw6dGFaobE/T99j8DoZq_I/AAAAAAAAB58/3OIaZviJxJA/s1600/jaojoby1.jpg',
+        picture: 'https://3.bp.blogspot.com/-kJw6dGFaobE/T99j8DoZq_I/AAAAAAAAB58/3OIaZviJxJA/s1600/jaojoby1.jpg',
     },
 ];
 
@@ -24,19 +24,44 @@ const filterStyleInput = document.querySelector('#filter-style');
 const filterForm = document.querySelector('.filter-songs');
 const resetFiltersBtn = document.querySelector('.reset-filters');
 
-const filterList = e => {};
+const filterList = e => {
+    showSongs(e, filterTitleInput.value, filterStyleInput.value);
+};
 
-const resetFilters = e => {};
+const resetFilters = e => {
+    filterForm.reset();
+    showSongs();
+};
 
 resetFiltersBtn.addEventListener('click', resetFilters);
 filterTitleInput.addEventListener('keyup', filterList);
 filterStyleInput.addEventListener('change', filterList);
 
+
 const showSongs = (event, filterTitle, filterStyle) => {
-    const html = songs.map(song => {
-        `<article class="song">
+    let sortedSongs = songs.sort((song1, song2) => song2.score - song1.score);
+    let filteredSongs = [];
+    if(filterTitle) {
+        filteredSongs = songs.filter(song => {
+            let lowerCaseTitle = song.title.toLowerCase();
+            let lowerCaseFilter = filterTitle.toLowerCase();
+            if(lowerCaseTitle.includes(lowerCaseFilter)) {
+                return true;
+            } else {
+                return false;
+            }
+        });
+    }
+    if(filterStyle) {
+        sortedSongs = sortedSongs.filter(song = song.style === filterStyle);
+    }
+
+    const html = sortedSongs
+    .map(
+        song => `
+        <article class="song">
             <section>
-                <img src="./assets/artist.jpeg" alt="artist-picture" />
+                <img src="${song.picture}" alt="${song.title}"/>
             </section>
             <section>
                 <h5>${song.title}</h5>
@@ -50,15 +75,20 @@ const showSongs = (event, filterTitle, filterStyle) => {
                 SCORE: ${song.score}
             </section>
             <section>
-                <button class="increment-score" data-id="${song.id}">+1</button>
+                <button 
+                class="increment-score" data-id="${song.title}">+1
+                </button>
                 <button class="delete" data-id="${song.id}">
-                    <img src="${song.picture}" alt="Delete Song" />
+                    <img src="./assets/icons/trash.svg" alt="Delete Song" />
                 </button>
             </section>
-        </article>`
-    }).join('');
-songsList.innerHTML = html;
+        </article>
+        `).join('');
+    console.log(html);
+    songsList.innerHTML = html;
 };
+
+showSongs();
 
 const addSong = e => {
     e.preventDefault();
@@ -69,13 +99,11 @@ const addSong = e => {
         style: form.style.value,
         length: form.length.value,
         picture: form.picture.value,
-        id: Date.nowe(),
+        id: Date.now(),
         score: 0,
     }
-
     songs.push(newSong);
     songsList.dispatchEvent(new CustomEvent('pleaseUpdateTheList'));
-
 };
 
 // event delegation for update and delete song buttons
@@ -95,13 +123,28 @@ const handleClick = e => {
 const updateSong = idFromTheButton => {
     const song = songs.find(song => song.id === idFromTheButton);
     song.score++;
+    songsList.dispatchEvent(new CustomEvent('pleaseUpdateTheList'));
     console.log();
 };
 
-const deleteSong = idToDelete => {};
+const deleteSong = idToDelete => {
+    songs = songs.filter(song => song.id === idToDelete);
+    console.log(songs);
+    songsList.dispatchEvent(new CustomEvent('pleaseUpdateTheList'));
+};
 
 // when we reload, we want to look inside the local storage and put them into songs
-const initLocalStorage = () => {};
+const initLocalStorage = () => {
+    const stringFromLs = localStorage.getItem('songs');
+    const lsItems = JSON.parse(stringFromLs);
+    console.log(lsItems);
+    if(lsItems) {
+        songs = lsItems;
+    } else {
+        songs = [];
+    }
+    songsList.dispatchEvent(new CustomEvent('pleaseUpdateTheList'));
+};
 
 // we want to update the local storage each time we update, delete or add an attirbute
 const updateLocalStorage = () => {};
@@ -111,4 +154,4 @@ songsList.addEventListener('pleaseUpdateTheList', showSongs);
 songsList.addEventListener('pleaseUpdateTheList', updateLocalStorage);
 songsList.addEventListener('click', handleClick);
 
-initLocalStorage();
+// initLocalStorage();
